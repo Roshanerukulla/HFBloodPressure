@@ -9,5 +9,5 @@ import org.springframework.web.bind.annotation.PathVariable;
 public interface UserFeignClient {
 
     @GetMapping("/api/users/{userId}/id") // Endpoint in the User microservice
-    Long getUserDetails(@PathVariable Long userId);
+    Long getUserId(@PathVariable Long userId);
 }

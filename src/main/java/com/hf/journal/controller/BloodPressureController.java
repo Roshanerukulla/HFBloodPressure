@@ -2,6 +2,8 @@ package com.hf.journal.controller;
 import com.hf.journal.entity.BloodPressure;
 import com.hf.journal.service.BloodPressureService;
 
+import feign.FeignException;
+
 import com.hf.journal.feign.UserFeignClient;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +23,6 @@ public class BloodPressureController {
     private final BloodPressureService bloodPressureService;
     private final UserFeignClient userFeignClient;
 
-  
     public BloodPressureController(BloodPressureService bloodPressureService, UserFeignClient userFeignClient) {
         this.bloodPressureService = bloodPressureService;
         this.userFeignClient = userFeignClient;
@@ -29,16 +30,18 @@ public class BloodPressureController {
 
     @PostMapping("/add")
     public ResponseEntity<String> addBloodPressure(@RequestBody BloodPressure bloodPressure, @RequestParam Long userId) {
-        // Use Feign Client to get user ID
-        Long existingUserId = userFeignClient.getUserDetails(userId);
+        try {
+            // Use Feign Client to get user ID
+            Long existingUserId = userFeignClient.getUserId(userId);
 
-        if (existingUserId == null) {
+            bloodPressure.setUserId(existingUserId);
+            bloodPressureService.addBloodPressureRecord(bloodPressure);
+            return ResponseEntity.status(HttpStatus.CREATED).body("Blood pressure record added successfully.");
+        } catch (FeignException.NotFound ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found with ID: " + userId);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while processing the request.");
         }
-
-        bloodPressure.setUserId(existingUserId);
-        bloodPressureService.addBloodPressureRecord(bloodPressure);
-        return ResponseEntity.status(HttpStatus.CREATED).body("Blood pressure record added successfully.");
     }
 
 
